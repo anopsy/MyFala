@@ -18,20 +18,20 @@ wind < 30 km/h
 But function to specify the user's level 
 or user's preferences should be added later.//TODO
 
-NRSPapp
--cmd
-    -server
-	      main.go
--pkg
-    -api
-	      user.go
-        spots.go
-    -app
-    	-server.go
-	    -handlers.go
-	    -routes.go
-    -repository
-      -spotlist.go
+1. NRSPapp
+ - cmd
+   - server
+     - main.go
+ - pkg
+   - api
+     - user.go
+     - spots.go
+   - app
+     - server.go
+     - handlers.go
+     - routes.go
+   - repository
+     - spotlist.go
 
 
 The app takes location and distance from the location		 // user.go or spots.go
