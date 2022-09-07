@@ -157,6 +157,16 @@ func swellAtLocation(x, y float64) Waves {
 }
 func main() {
 
+	lat := 52.4907
+	long := 4.6023
+	listSwell := swellAtLocation(lat, long)
+	fmt.Println(listSwell)
+	listWind := windAtLocation(lat, long)
+	fmt.Println(listWind)
+
+	listW := listWind.Hours
+	//listS:= listSwell.Hours
+
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"dbname=%s sslmode=disable",
 		host, port, user, dbname)
@@ -172,21 +182,15 @@ func main() {
 	}
 
 	fmt.Println("Successfully connected!")
-	/*
-	   	sqlStatement := `
-	       INSERT INTO conditions (spot_id, time_stamp, swell, wind)
-	       VALUES ($1, $2, $3, $4)` //TODO ogarniecia
 
-	   	_, err = db.Exec(sqlStatement, 1, Time.Wind, Swell, Windspeed)
-	   	if err != nil {
-	   		panic(err)
-	   	}
-	*/
-	lat := 52.4907
-	long := 4.6023
-	listSwell := swellAtLocation(lat, long)
-	fmt.Println(listSwell)
-	listWind := windAtLocation(lat, long)
-	fmt.Println(listWind)
+	for _, v := range listW {
+		sqlStatement := `
+ 	INSERT INTO conditions (spot_id, time_stamp, swell, wind)
+	VALUES ($1, $2, $3, $4)`
+		_, err := db.Exec(sqlStatement, 1, v.Time, 0, v.WindSpeed.Icon)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 }
