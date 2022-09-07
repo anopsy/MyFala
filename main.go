@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,7 +17,7 @@ const (
 	host   = "localhost"
 	port   = 5432
 	user   = "postgres"
-	dbname = "conditions"
+	dbname = "surf_spots"
 )
 
 //TODO function that takes data from API and saves it to a data base
@@ -155,23 +156,23 @@ func swellAtLocation(x, y float64) Waves {
 	return waves
 }
 func main() {
+
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"dbname=%s sslmode=disable",
+		host, port, user, dbname)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
 	/*
-	   	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-	   		"dbname=%s sslmode=disable",
-	   		host, port, user, dbname)
-	   	db, err := sql.Open("postgres", psqlInfo)
-	   	if err != nil {
-	   		panic(err)
-	   	}
-	   	defer db.Close()
-
-	   	err = db.Ping()
-	   	if err != nil {
-	   		panic(err)
-	   	}
-
-	   	fmt.Println("Successfully connected!")
-
 	   	sqlStatement := `
 	       INSERT INTO conditions (spot_id, time_stamp, swell, wind)
 	       VALUES ($1, $2, $3, $4)` //TODO ogarniecia
