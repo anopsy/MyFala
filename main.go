@@ -165,7 +165,7 @@ func main() {
 	fmt.Println(listWind)
 
 	listW := listWind.Hours
-	//listS:= listSwell.Hours
+	listS := listSwell.Hours
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"dbname=%s sslmode=disable",
@@ -183,13 +183,16 @@ func main() {
 
 	fmt.Println("Successfully connected!")
 
-	for _, v := range listW {
-		sqlStatement := `
- 	INSERT INTO conditions (spot_id, time_stamp, swell, wind)
-	VALUES ($1, $2, $3, $4)`
-		_, err := db.Exec(sqlStatement, 1, v.Time, 0, v.WindSpeed.Icon)
-		if err != nil {
-			panic(err)
+	for i, v := range listW {
+		s := listS[i]
+		if s.Time == v.Time {
+			sqlStatement := `
+    INSERT INTO conditions (spot_id, time_stamp, swell, wind)
+    VALUES ($1, $2, $3, $4)`
+			_, err := db.Exec(sqlStatement, 1, v.Time, s.SwellHeight.Icon, v.WindSpeed.Icon)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 
