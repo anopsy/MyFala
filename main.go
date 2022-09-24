@@ -229,15 +229,14 @@ func populateConditions(list []Location) {
 			panic(err)
 		}
 
-		fmt.Println("Successfully connected!")
-
 		for i, u := range listW {
 			s := listS[i]
 			if s.Time == u.Time {
 				sqlStatement := `
-    INSERT INTO conditions (spot_id, time_stamp, swell, wind)
-    VALUES ($1, $2, $3, $4)`
-				_, err := db.Exec(sqlStatement, v.Id, u.Time, s.SwellHeight.Icon, u.WindSpeed.Icon)
+    INSERT INTO surf_conditions (spot_id, time_stamp, swell, wind, surfable)
+    VALUES ($1, $2, $3, $4, $5)`
+				isSurf := IsSurfable(s.SwellHeight.Icon, u.WindSpeed.Icon)
+				_, err := db.Exec(sqlStatement, v.Id, u.Time, s.SwellHeight.Icon, u.WindSpeed.Icon, isSurf)
 				if err != nil {
 					panic(err)
 				}
@@ -245,10 +244,90 @@ func populateConditions(list []Location) {
 		}
 	}
 }
+
+func IsSurfable(s, w float64) bool {
+	if s > 0.4 && w < 40.0 {
+		return true
+	}
+	return false
+}
+
+type Surfable struct {
+	Id       int
+	Spot_id  int
+	Time     time.Time
+	Swell    float64
+	Wind     float64
+	Surfable bool
+}
+
+func getSurfable() []Surfable {
+	listSurfable := make([]Surfable, 0)
+	//database query for location
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"dbname=%s sslmode=disable",
+		host, port, user, dbname)
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Successfully connected!")
+
+	rows, err := db.Query("SELECT id, spot_id, time_stamp, swell, wind, surfable FROM surf_conditions where surfable = 't'")
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var entry Surfable
+		err = rows.Scan(&entry.Id, &entry.Spot_id, &entry.Time, &entry.Swell, &entry.Wind, &entry.Surfable)
+		if err != nil {
+			panic(err)
+		}
+
+		listSurfable = append(listSurfable, entry)
+
+	}
+
+	err = rows.Err()
+	if err != nil {
+		panic(err)
+
+	}
+
+	return listSurfable
+
+}
+
+func calculateDistance(lat, long float64) []float64 {
+	//implement
+	return nil
+}
+
+// TODO function calculating the distance between user's location and surfable spot
 func main() {
 
+	myLat := 52.3802017
+	myLong := 4.9121986
+	distance := calculateDistance(myLat, myLong) //implement
 	listSpots := getLocation()
+	listSurf := getSurfable()
+
 	fmt.Println(listSpots)
+	fmt.Println(listSurf)
 	populateConditions(listSpots)
 
+	for _, v := range listSurf {
+		fmt.Printf("%v\n", v)
+	}
+	for _, v := range distance {
+		fmt.Printf("%v\n", v)
+	}
 }
