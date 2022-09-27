@@ -233,10 +233,10 @@ func populateConditions(list []Location) {
 			s := listS[i]
 			if s.Time == u.Time {
 				sqlStatement := `
-    INSERT INTO surf_conditions (spot_id, time_stamp, swell, wind, surfable)
-    VALUES ($1, $2, $3, $4, $5)`
+    INSERT INTO surfspot_conditions (spot_id, name, time_stamp, swell, wind, surfable)
+    VALUES ($1, $2, $3, $4, $5, $6)`
 				isSurf := IsSurfable(s.SwellHeight.Icon, u.WindSpeed.Icon)
-				_, err := db.Exec(sqlStatement, v.Id, u.Time, s.SwellHeight.Icon, u.WindSpeed.Icon, isSurf)
+				_, err := db.Exec(sqlStatement, v.Id, v.Name, u.Time, s.SwellHeight.Icon, u.WindSpeed.Icon, isSurf)
 				if err != nil {
 					panic(err)
 				}
@@ -255,6 +255,7 @@ func IsSurfable(s, w float64) bool {
 type Surfable struct {
 	Id       int
 	Spot_id  int
+	Name     string
 	Time     time.Time
 	Swell    float64
 	Wind     float64
@@ -280,14 +281,14 @@ func getSurfable() []Surfable {
 
 	fmt.Println("Successfully connected!")
 
-	rows, err := db.Query("SELECT id, spot_id, time_stamp, swell, wind, surfable FROM surf_conditions where surfable = 't'")
+	rows, err := db.Query("SELECT id, spot_id, name, time_stamp, swell, wind, surfable FROM surfspot_conditions where surfable = 't'")
 	if err != nil {
 		panic(err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var entry Surfable
-		err = rows.Scan(&entry.Id, &entry.Spot_id, &entry.Time, &entry.Swell, &entry.Wind, &entry.Surfable)
+		err = rows.Scan(&entry.Id, &entry.Spot_id, &entry.Name, &entry.Time, &entry.Swell, &entry.Wind, &entry.Surfable)
 		if err != nil {
 			panic(err)
 		}
