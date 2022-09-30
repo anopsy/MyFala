@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
+	"sort"
+	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -20,8 +23,9 @@ const (
 	dbname = "surf_spots"
 )
 
-// TODO function that takes data from API and saves it to a data base
-// database of lat/long for dutch coast
+// TODO make function that checks connection do database
+// to make getLocation and hetSurfable and populateConditions more readable
+// TODO make function that connects to API to make windAtLocation and swellAtLocation more readable
 type Location struct {
 	Id   int
 	Name string
@@ -307,28 +311,92 @@ func getSurfable() []Surfable {
 
 }
 
-func calculateDistance(lat, long float64) []float64 {
-	//implement
-	return nil
+type ClosestSpot struct {
+	Id       int
+	Name     string
+	Lat      string
+	Long     string
+	Distance float64
+	Time     time.Time
+	Swell    float64
+	Wind     float64
+}
+
+func calculateDistance(point1, point2 string, userLat, userLong float64) float64 {
+	const PI float64 = 3.141592653589793
+	p1, err := strconv.ParseFloat(point1, 64)
+	if err != nil {
+		panic(err)
+	}
+	p2, err := strconv.ParseFloat(point2, 64)
+	if err != nil {
+		panic(err)
+	}
+
+	radlat1 := float64(PI * p1 / 180)
+	radlat2 := float64(PI * userLat / 180)
+
+	theta := float64(p2 - userLong)
+	radtheta := float64(PI * theta / 180)
+
+	dist := math.Sin(radlat1)*math.Sin(radlat2) + math.Cos(radlat1)*math.Cos(radlat2)*math.Cos(radtheta)
+
+	if dist > 1 {
+		dist = 1
+	}
+
+	dist = math.Acos(dist)
+	dist = dist * 180 / PI
+	dist = dist * 60 * 1.1515 * 1.609344
+
+	return dist
+}
+
+func listDistance(lat, long float64) []ClosestSpot {
+	listSpots := getLocation()
+	listSurf := getSurfable()
+	cs := make([]ClosestSpot, 0)
+
+	for _, w := range listSurf {
+		for _, v := range listSpots {
+			var spot ClosestSpot
+			if v.Id == w.Spot_id {
+				spot.Id = v.Id
+				spot.Name = v.Name
+				spot.Lat = v.Lat
+				spot.Long = v.Long
+				spot.Distance = calculateDistance(v.Lat, v.Long, lat, long)
+				spot.Time = w.Time
+				spot.Swell = w.Swell
+				spot.Wind = w.Wind
+
+				cs = append(cs, spot)
+			}
+
+		}
+	}
+
+	sort.Slice(cs, func(i, j int) bool { return cs[i].Distance < cs[j].Distance })
+	return cs
+
 }
 
 // TODO function calculating the distance between user's location and surfable spot
 func main() {
 
+	//listSpots := getLocation()
+	//populateConditions(listSpots)
 	myLat := 52.3802017
 	myLong := 4.9121986
-	distance := calculateDistance(myLat, myLong) //implement
-	listSpots := getLocation()
-	listSurf := getSurfable()
+	distance := listDistance(myLat, myLong)
 
-	fmt.Println(listSpots)
-	fmt.Println(listSurf)
-	populateConditions(listSpots)
+	//fmt.Println(listSpots)
+	//fmt.Println(listSurf)
 
-	for _, v := range listSurf {
-		fmt.Printf("%v\n", v)
-	}
 	for _, v := range distance {
+
 		fmt.Printf("%v\n", v)
+		fmt.Println("     ")
 	}
+
 }
