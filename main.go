@@ -317,7 +317,7 @@ type ClosestSpot struct {
 	Lat      string
 	Long     string
 	Distance float64
-	Time     time.Time
+	Time     string
 	Swell    float64
 	Wind     float64
 }
@@ -366,7 +366,7 @@ func listDistance(lat, long float64) []ClosestSpot {
 				spot.Lat = v.Lat
 				spot.Long = v.Long
 				spot.Distance = calculateDistance(v.Lat, v.Long, lat, long)
-				spot.Time = w.Time
+				spot.Time = w.Time.Format(time.RFC1123)
 				spot.Swell = w.Swell
 				spot.Wind = w.Wind
 
@@ -381,22 +381,70 @@ func listDistance(lat, long float64) []ClosestSpot {
 
 }
 
-// TODO function calculating the distance between user's location and surfable spot
-func main() {
+func chooseLocationHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintf(w, "ParseForm() err: %v", err)
+		return
+	}
+	fmt.Fprintf(w, "POST request successful\n")
+	location := r.FormValue("Location")
 
 	//listSpots := getLocation()
 	//populateConditions(listSpots)
-	myLat := 52.3802017
-	myLong := 4.9121986
+
+	var myLat float64
+	var myLong float64
+
+	switch location {
+	case "Amsterdam":
+		myLat = 52.366667
+		myLong = 4.9
+	case "Utrecht":
+		myLat = 52.092876
+		myLong = 5.104480
+	case "Eindhoven":
+		myLat = 51.441642
+		myLong = 5.4697225
+	case "Den Haag":
+		myLat = 52.078663
+		myLong = 4.288788
+	case "Groningen":
+		myLat = 53.2193835
+		myLong = 6.5665018
+	case "Amersfoort":
+		myLat = 52.155499
+		myLong = 5.387740
+	case "Maastricht":
+		myLat = 50.851368
+		myLong = 5.690973
+
+	}
+	fmt.Fprintf(w, "Your location is : %s\n", location)
+	fmt.Fprintf(w, "Your coordinates are : %f, %f \n", myLat, myLong)
+	fmt.Fprintf(w, "Your closest surf spot is :")
+
 	distance := listDistance(myLat, myLong)
-
-	//fmt.Println(listSpots)
-	//fmt.Println(listSurf)
-
 	for _, v := range distance {
 
-		fmt.Printf("%v\n", v)
+		fmt.Fprintf(w, "%v\n", v.Name)
+		fmt.Fprintf(w, "It's %.2f km from you \n", v.Distance)
+		fmt.Fprintf(w, "At %v  \n", v.Time)
+		fmt.Fprintf(w, "The waves there are %v m\n", v.Swell)
+		fmt.Fprintf(w, "The wind is %v\n", v.Wind)
+		fmt.Println("     ")
+		fmt.Println("     ")
 		fmt.Println("     ")
 	}
+
+}
+
+func main() {
+	fileServer := http.FileServer(http.Dir("./static"))
+	http.Handle("/", fileServer)
+
+	http.HandleFunc("/chooseLocation", chooseLocationHandler)
+
+	fmt.Println("Starting the server on:2137")
+	http.ListenAndServe(":2137", nil)
 
 }
