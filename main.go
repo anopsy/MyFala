@@ -290,14 +290,18 @@ func getSurfable() []Surfable {
 		panic(err)
 	}
 	defer rows.Close()
+	today := time.Now()
 	for rows.Next() {
 		var entry Surfable
+
 		err = rows.Scan(&entry.Id, &entry.Spot_id, &entry.Name, &entry.Time, &entry.Swell, &entry.Wind, &entry.Surfable)
 		if err != nil {
 			panic(err)
 		}
-
-		listSurfable = append(listSurfable, entry)
+		whenSurfable := &entry.Time
+		if whenSurfable.After(today) {
+			listSurfable = append(listSurfable, entry)
+		}
 
 	}
 
@@ -389,8 +393,8 @@ func chooseLocationHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "POST request successful\n")
 	location := r.FormValue("Location")
 
-	//listSpots := getLocation()
-	//populateConditions(listSpots)
+	listSpots := getLocation()
+	populateConditions(listSpots)
 
 	var myLat float64
 	var myLong float64
@@ -431,9 +435,9 @@ func chooseLocationHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "At %v  \n", v.Time)
 		fmt.Fprintf(w, "The waves there are %v m\n", v.Swell)
 		fmt.Fprintf(w, "The wind is %v\n", v.Wind)
-		fmt.Println("     ")
-		fmt.Println("     ")
-		fmt.Println("     ")
+		fmt.Println(w, "     ")
+		fmt.Println(w, "     ")
+		fmt.Println(w, "     ")
 	}
 
 }
