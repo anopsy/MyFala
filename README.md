@@ -1,4 +1,4 @@
-# NRPSapp
+# MyFala App
 
 The purpose of this app is to help the user to find the nearest spots
 where the weather and surfing conditions are good,
