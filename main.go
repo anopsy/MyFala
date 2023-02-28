@@ -401,8 +401,7 @@ func chooseLocationHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Print("Error parsing latFLoat")
 	}
-	listSpots := getLocation()
-	populateConditions(listSpots)
+	
 
 	distance := listDistance(latFloat, longFloat)
 
@@ -467,11 +466,23 @@ func chooseLocationHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 */
+func updateConditions() {
+for {
+tm := time.Now()
+if tm.Hour() == 17 && tm.Minute() == 15 {
+	listSpots := getLocation()
+	populateConditions(listSpots)
+}
+}
+
+}
 func main() {
 
 	router := mux.NewRouter()
+	
 	router.HandleFunc("/chooseLocation/{lat}/{long}", chooseLocationHandler).Methods("GET")
 
 	fmt.Println("Starting the server on:2137")
 	http.ListenAndServe(":2137", router)
+	go updateConditions()
 }
