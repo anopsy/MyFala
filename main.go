@@ -410,12 +410,14 @@ func chooseLocationHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func main() {
+	#TODO put that part so it executes at 7AM everyday
+	listSpots := getLocation()
+	populateConditions(listSpots)
+
 
 	router := mux.NewRouter()
-	
 	router.HandleFunc("/chooseLocation/{lat}/{long}", chooseLocationHandler).Methods("GET")
-
 	fmt.Println("Starting the server on:2137")
 	http.ListenAndServe(":2137", router)
-	go updateConditions()
+
 }
