@@ -18,16 +18,58 @@ import (
 )
 
 const (
-	host   = "localhost"
-	port   = 5432
-	user   = "postgres"
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
 	password = "postgres"
-	dbname = "postgres"
+	dbname   = "postgres"
 )
 
-// TODO make function that checks connection do database
-// to make getLocation and hetSurfable and populateConditions more readable
-// TODO make function that connects to API to make windAtLocation and swellAtLocation more readable
+type Meta struct {
+	Cost         int
+	DailyQuota   int
+	End          string
+	Lat          float64
+	Lng          float64
+	Params       []string
+	RequestCount int
+	Start        string
+}
+
+type Wind struct {
+	WindSpeed WindSpeed
+	Time      string
+}
+
+type WindSpeed struct {
+	Icon float64
+	Noaa float64
+	Sg   float64
+}
+
+type WindConditions struct {
+	Hours []Wind
+	Meta  Meta
+}
+
+type Swell struct {
+	SwellHeight SwellHeight
+	Time        string
+}
+
+type SwellHeight struct {
+	Dwd   float64
+	Icon  float64
+	Meteo float64
+	Noaa  float64
+	Sg    float64
+}
+
+type Waves struct {
+	Hours []Swell
+	Meta  Meta
+}
+
 type Location struct {
 	Id   int
 	Name string
@@ -35,13 +77,34 @@ type Location struct {
 	Long string
 }
 
+type Surfable struct {
+	Id       int
+	Spot_id  int
+	Name     string
+	Time     time.Time
+	Swell    float64
+	Wind     float64
+	Surfable bool
+}
+
+type ClosestSpot struct {
+	Id       int     `json: "Id"`
+	Name     string  `json: "Name"`
+	Lat      string  `json: "Lat"`
+	Long     string  `json: "Long"`
+	Distance float64 `json: "Distance"`
+	Time     string  `json: "Time"`
+	Swell    float64 `json: "Swell"`
+	Wind     float64 `json: "Wind"`
+}
+
 func getLocation() []Location {
 
 	listLocation := make([]Location, 0)
 	//database query for location
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-	"password=%s dbname=%s sslmode=disable",
-		host, port, user,password, dbname)
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		fmt.Println("Problem connecting to postgres db")
@@ -57,7 +120,7 @@ func getLocation() []Location {
 
 	rows, err := db.Query("SELECT id, name, lat, long FROM surf_spots")
 	if err != nil {
-	    fmt.Println("Problem selecting from postgres aka surfspots")
+		fmt.Println("Problem selecting from postgres aka surfspots")
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -79,32 +142,6 @@ func getLocation() []Location {
 
 	return listLocation
 
-}
-
-type Meta struct {
-	Cost         int
-	DailyQuota   int
-	End          string
-	Lat          float64
-	Lng          float64
-	Params       []string
-	RequestCount int
-	Start        string
-}
-type Wind struct {
-	WindSpeed WindSpeed
-	Time      string
-}
-
-type WindSpeed struct {
-	Icon float64
-	Noaa float64
-	Sg   float64
-}
-
-type WindConditions struct {
-	Hours []Wind
-	Meta  Meta
 }
 
 func windAtLocation(x, y string) WindConditions {
@@ -150,24 +187,6 @@ func windAtLocation(x, y string) WindConditions {
 	json.Unmarshal([]byte(body), &windCond)
 	return windCond
 
-}
-
-type Swell struct {
-	SwellHeight SwellHeight
-	Time        string
-}
-
-type SwellHeight struct {
-	Dwd   float64
-	Icon  float64
-	Meteo float64
-	Noaa  float64
-	Sg    float64
-}
-
-type Waves struct {
-	Hours []Swell
-	Meta  Meta
 }
 
 func swellAtLocation(x, y string) Waves {
@@ -222,7 +241,7 @@ func populateConditions(list []Location) {
 		listS := listSwell.Hours
 
 		psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
+			"password=%s dbname=%s sslmode=disable",
 			host, port, user, password, dbname)
 		db, err := sql.Open("postgres", psqlInfo)
 		if err != nil {
@@ -258,21 +277,11 @@ func IsSurfable(s, w float64) bool {
 	return false
 }
 
-type Surfable struct {
-	Id       int
-	Spot_id  int
-	Name     string
-	Time     time.Time
-	Swell    float64
-	Wind     float64
-	Surfable bool
-}
-
 func getSurfable() []Surfable {
 	listSurfable := make([]Surfable, 0)
 	//database query for location
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-	"password=%s dbname=%s sslmode=disable",
+		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
@@ -315,17 +324,6 @@ func getSurfable() []Surfable {
 
 	return listSurfable
 
-}
-
-type ClosestSpot struct {
-	Id       int     `json: "Id"`
-	Name     string  `json: "Name"`
-	Lat      string  `json: "Lat"`
-	Long     string  `json: "Long"`
-	Distance float64 `json: "Distance"`
-	Time     string  `json: "Time"`
-	Swell    float64 `json: "Swell"`
-	Wind     float64 `json: "Wind"`
 }
 
 func calculateDistance(point1, point2 string, userLat, userLong float64) float64 {
@@ -401,19 +399,16 @@ func chooseLocationHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Print("Error parsing latFLoat")
 	}
-	
 
 	distance := listDistance(latFloat, longFloat)
 
 	json.NewEncoder(w).Encode(distance)
 }
 
-
 func main() {
-	#TODO put that part so it executes at 7AM everyday
+	//TODO put that part so it executes at 7AM everyday
 	listSpots := getLocation()
 	populateConditions(listSpots)
-
 
 	router := mux.NewRouter()
 	router.HandleFunc("/chooseLocation/{lat}/{long}", chooseLocationHandler).Methods("GET")
